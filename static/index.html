@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codenames</title>
+<style>
+  :root {
+    --red: #d94040;
+    --red-light: #f8d7d7;
+    --blue: #3a7bd5;
+    --blue-light: #d0e2f7;
+    --neutral: #c9b99a;
+    --neutral-light: #f0ead6;
+    --assassin: #1a1a2e;
+    --bg: #f5f0e8;
+    --surface: #fff;
+    --text: #1a1a2e;
+    --text-muted: #6b7280;
+    --border: #d1d5db;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .hidden { display: none !important; }
+
+  /* --- Login Screen --- */
+  #login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+  }
+
+  #login-screen h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+
+  #login-screen h1 .red { color: var(--red); }
+  #login-screen h1 .blue { color: var(--blue); }
+
+  #login-screen .login-box {
+    background: var(--surface);
+    padding: 32px;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  #login-screen input {
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 240px;
+  }
+
+  #login-screen input:focus { border-color: var(--blue); }
+
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .btn-red {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .btn-blue {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .btn-neutral {
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 0.875rem;
+  }
+
+  /* --- Game Screen --- */
+  #game-screen {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .top-bar h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .score-bar {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .score-red { color: var(--red); }
+  .score-blue { color: var(--blue); }
+
+  .turn-indicator {
+    text-align: center;
+    padding: 10px;
+    border-radius: var(--radius);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .turn-indicator.red { background: var(--red-light); color: var(--red); }
+  .turn-indicator.blue { background: var(--blue-light); color: var(--blue); }
+  .turn-indicator.gameover { background: #e5e7eb; color: var(--text); }
+
+  /* --- Role Selection --- */
+  .role-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .role-bar .role-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .role-btn.active {
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+    transform: scale(1.05);
+  }
+
+  .role-btn.red-spy { background: var(--red); color: #fff; }
+  .role-btn.red-op { background: var(--red-light); color: var(--red); border-color: var(--red); }
+  .role-btn.blue-spy { background: var(--blue); color: #fff; }
+  .role-btn.blue-op { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+
+  /* --- Board --- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    aspect-ratio: 1.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    padding: 6px;
+    word-break: break-word;
+    user-select: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .card:hover:not(.revealed):not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  .card.disabled { cursor: default; }
+
+  .card.revealed { cursor: default; color: #fff; border-color: transparent; }
+  .card.revealed.color-red { background: var(--red); }
+  .card.revealed.color-blue { background: var(--blue); }
+  .card.revealed.color-neutral { background: var(--neutral); color: var(--text); }
+  .card.revealed.color-assassin { background: var(--assassin); }
+
+  .card.spy-hint.color-red { border-color: var(--red); background: var(--red-light); color: var(--red); }
+  .card.spy-hint.color-blue { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .card.spy-hint.color-neutral { border-color: var(--neutral); background: var(--neutral-light); color: #7a6e55; }
+  .card.spy-hint.color-assassin { border-color: var(--assassin); background: #2d2d44; color: #fff; }
+
+  /* --- Clue Area --- */
+  .clue-area {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .clue-area input {
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .clue-area input:focus { border-color: var(--blue); }
+
+  .clue-area input[type="number"] { width: 70px; }
+  .clue-area input[type="text"] { width: 180px; }
+
+  .current-clue {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding: 10px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* --- Players --- */
+  .players-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .players-panel h3 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .players-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .player-tag {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .player-tag.red { background: var(--red-light); color: var(--red); }
+  .player-tag.blue { background: var(--blue-light); color: var(--blue); }
+  .player-tag.none { background: #e5e7eb; color: var(--text-muted); }
+
+  /* --- Log --- */
+  .log-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .log-panel h3 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .log-entry {
+    font-size: 0.85rem;
+    padding: 3px 0;
+    color: var(--text-muted);
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .log-entry:last-child { border-bottom: none; }
+
+  /* --- Error Toast --- */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--assassin);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  @media (max-width: 600px) {
+    .card { font-size: 0.65rem; aspect-ratio: 1.3; }
+    .board { gap: 4px; }
+    #game-screen { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <h1><span class="red">CODE</span><span class="blue">NAMES</span></h1>
+  <div class="login-box">
+    <input type="text" id="name-input" placeholder="Enter your name" maxlength="20" autofocus>
+    <button class="btn btn-primary" id="join-btn">Join Game</button>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="game-screen" class="hidden">
+  <div class="top-bar">
+    <h1>Codenames</h1>
+    <div class="score-bar">
+      <span class="score-red">RED: <span id="red-score">9</span></span>
+      <span class="score-blue">BLUE: <span id="blue-score">8</span></span>
+    </div>
+    <div>
+      <button class="btn btn-neutral btn-sm" id="new-game-btn">New Game</button>
+    </div>
+  </div>
+
+  <!-- Role selection -->
+  <div class="role-bar">
+    <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">Pick role:</span>
+    <button class="role-btn red-spy" data-team="red" data-role="spymaster">Red Spymaster</button>
+    <button class="role-btn red-op" data-team="red" data-role="operative">Red Operative</button>
+    <button class="role-btn blue-spy" data-team="blue" data-role="spymaster">Blue Spymaster</button>
+    <button class="role-btn blue-op" data-team="blue" data-role="operative">Blue Operative</button>
+  </div>
+
+  <div id="turn-indicator" class="turn-indicator red"></div>
+
+  <!-- Clue input (spymaster) -->
+  <div id="clue-input-area" class="clue-area hidden">
+    <input type="text" id="clue-word" placeholder="Clue word" maxlength="30">
+    <input type="number" id="clue-count" placeholder="#" min="0" max="9" value="1">
+    <button class="btn btn-primary btn-sm" id="give-clue-btn">Give Clue</button>
+  </div>
+
+  <!-- Current clue display -->
+  <div id="current-clue" class="current-clue hidden"></div>
+
+  <!-- End turn button -->
+  <div style="text-align:center; margin-bottom:12px;">
+    <button class="btn btn-neutral btn-sm hidden" id="end-turn-btn">End Turn</button>
+  </div>
+
+  <!-- Start game button (lobby) -->
+  <div style="text-align:center; margin-bottom:12px;">
+    <button class="btn btn-primary hidden" id="start-game-btn">Start Game</button>
+  </div>
+
+  <!-- Board -->
+  <div class="board" id="board"></div>
+
+  <!-- Players -->
+  <div class="players-panel">
+    <h3>Players</h3>
+    <div class="players-list" id="players-list"></div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-panel">
+    <h3>Game Log</h3>
+    <div id="game-log"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const loginScreen = document.getElementById('login-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const nameInput = document.getElementById('name-input');
+  const joinBtn = document.getElementById('join-btn');
+  const boardEl = document.getElementById('board');
+  const turnIndicator = document.getElementById('turn-indicator');
+  const clueInputArea = document.getElementById('clue-input-area');
+  const clueWordInput = document.getElementById('clue-word');
+  const clueCountInput = document.getElementById('clue-count');
+  const giveClueBtn = document.getElementById('give-clue-btn');
+  const currentClueEl = document.getElementById('current-clue');
+  const endTurnBtn = document.getElementById('end-turn-btn');
+  const startGameBtn = document.getElementById('start-game-btn');
+  const newGameBtn = document.getElementById('new-game-btn');
+  const redScoreEl = document.getElementById('red-score');
+  const blueScoreEl = document.getElementById('blue-score');
+  const playersListEl = document.getElementById('players-list');
+  const gameLogEl = document.getElementById('game-log');
+  const toastEl = document.getElementById('toast');
+
+  let ws = null;
+  let myName = '';
+  let myTeam = '';
+  let myRole = '';
+  let gameState = null;
+
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinBtn.click(); });
+
+  joinBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    myName = name;
+    connect(name);
+  });
+
+  function connect(name) {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/ws?name=${encodeURIComponent(name)}`);
+
+    ws.onopen = () => {
+      loginScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'state') {
+        gameState = msg.state;
+        renderBoard();
+        renderUI();
+      } else if (msg.type === 'players') {
+        renderPlayers(msg.players);
+      } else if (msg.type === 'error') {
+        showToast(msg.error);
+      }
+    };
+
+    ws.onclose = () => {
+      showToast('Disconnected from server.');
+    };
+  }
+
+  // Role buttons
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      myTeam = btn.dataset.team;
+      myRole = btn.dataset.role;
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      ws.send(JSON.stringify({ type: 'set_role', team: myTeam, role: myRole }));
+    });
+  });
+
+  startGameBtn.addEventListener('click', () => {
+    ws.send(JSON.stringify({ type: 'start_game' }));
+  });
+
+  giveClueBtn.addEventListener('click', () => {
+    const word = clueWordInput.value.trim().toUpperCase();
+    const count = parseInt(clueCountInput.value, 10);
+    if (!word || isNaN(count) || count < 0) {
+      showToast('Enter a valid clue word and number.');
+      return;
+    }
+    ws.send(JSON.stringify({ type: 'give_clue', word, count }));
+    clueWordInput.value = '';
+    clueCountInput.value = '1';
+  });
+
+  clueWordInput.addEventListener('keydown', e => { if (e.key === 'Enter') giveClueBtn.click(); });
+
+  endTurnBtn.addEventListener('click', () => {
+    ws.send(JSON.stringify({ type: 'end_turn' }));
+  });
+
+  newGameBtn.addEventListener('click', () => {
+    if (confirm('Start a new game? Current progress will be lost.')) {
+      ws.send(JSON.stringify({ type: 'new_game' }));
+    }
+  });
+
+  function renderBoard() {
+    if (!gameState) return;
+    boardEl.innerHTML = '';
+
+    const isMyTurnOp = myRole === 'operative'
+      && gameState.phase === 'guess'
+      && gameState.currentTeam === myTeam;
+
+    gameState.board.forEach((card, i) => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.textContent = card.word;
+
+      if (card.revealed) {
+        el.classList.add('revealed');
+        if (card.color) el.classList.add('color-' + card.color);
+      } else if (card.color && myRole === 'spymaster') {
+        el.classList.add('spy-hint', 'color-' + card.color);
+      }
+
+      if (!card.revealed && isMyTurnOp) {
+        el.addEventListener('click', () => {
+          ws.send(JSON.stringify({ type: 'guess', index: i }));
+        });
+      } else {
+        el.classList.add('disabled');
+      }
+
+      boardEl.appendChild(el);
+    });
+  }
+
+  function renderUI() {
+    if (!gameState) return;
+
+    redScoreEl.textContent = gameState.redRemaining;
+    blueScoreEl.textContent = gameState.blueRemaining;
+
+    // Turn indicator
+    if (gameState.phase === 'gameover') {
+      turnIndicator.className = 'turn-indicator gameover';
+      turnIndicator.textContent = (gameState.winner === 'red' ? 'RED' : 'BLUE') + ' TEAM WINS!';
+    } else if (gameState.phase === 'lobby') {
+      turnIndicator.className = 'turn-indicator';
+      turnIndicator.textContent = 'Waiting for game to start...';
+      turnIndicator.style.background = '#e5e7eb';
+      turnIndicator.style.color = 'var(--text)';
+    } else {
+      turnIndicator.className = 'turn-indicator ' + gameState.currentTeam;
+      const phaseText = gameState.phase === 'clue' ? 'giving a clue' : 'guessing';
+      turnIndicator.textContent = gameState.currentTeam.toUpperCase() + ' team is ' + phaseText;
+    }
+
+    // Start game button
+    if (gameState.phase === 'lobby') {
+      startGameBtn.classList.remove('hidden');
+    } else {
+      startGameBtn.classList.add('hidden');
+    }
+
+    // Clue input (only for current team's spymaster during clue phase)
+    const canGiveClue = myRole === 'spymaster'
+      && gameState.phase === 'clue'
+      && gameState.currentTeam === myTeam;
+    if (canGiveClue) {
+      clueInputArea.classList.remove('hidden');
+    } else {
+      clueInputArea.classList.add('hidden');
+    }
+
+    // Current clue display
+    if (gameState.phase === 'guess' && gameState.currentClue) {
+      currentClueEl.classList.remove('hidden');
+      currentClueEl.textContent = 'Clue: ' + gameState.currentClue.word + ' ' + gameState.currentClue.count
+        + ' (guesses left: ' + gameState.guessesLeft + ')';
+    } else {
+      currentClueEl.classList.add('hidden');
+    }
+
+    // End turn button
+    const canEndTurn = myRole === 'operative'
+      && gameState.phase === 'guess'
+      && gameState.currentTeam === myTeam;
+    if (canEndTurn) {
+      endTurnBtn.classList.remove('hidden');
+    } else {
+      endTurnBtn.classList.add('hidden');
+    }
+
+    // Game log
+    gameLogEl.innerHTML = '';
+    if (gameState.log) {
+      gameState.log.slice().reverse().forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.textContent = entry;
+        gameLogEl.appendChild(div);
+      });
+    }
+  }
+
+  function renderPlayers(players) {
+    playersListEl.innerHTML = '';
+    players.forEach(p => {
+      const tag = document.createElement('span');
+      tag.className = 'player-tag ' + (p.team || 'none');
+      let label = p.name;
+      if (p.team && p.role) {
+        label += ' (' + p.team + ' ' + p.role + ')';
+      }
+      tag.textContent = label;
+      playersListEl.appendChild(tag);
+    });
+  }
+
+  let toastTimeout;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 3000);
+  }
+})();
+</script>
+</body>
+</html>
